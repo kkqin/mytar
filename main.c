@@ -87,7 +87,7 @@ int file_exist(const char* file_name) {
 
 struct _tar_head* create_tar_block(const int fd, int* offsize) {
 	struct _tar_head* tar = (struct _tar_head*)calloc(1,sizeof(struct _tar_head));
-	int bytes = _read(fd, tar->block, 512); 
+	int bytes = read(fd, tar->block, 512); 
 	if(bytes != 512) {
 		free(tar);
 		printf("not 512. is end.\n");
