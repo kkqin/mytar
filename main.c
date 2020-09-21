@@ -95,7 +95,7 @@ struct _tar_head* create_tar_block(const int fd, int* offsize) {
 	*offsize += bytes;
 
 	// simple check;
-	if( !strcmp(tar->ustar ,"ustar") || !strcmp(tar->ustar, "ustar  ") ) {
+	if(!strncmp(tar->ustar ,"ustar", 5)) {
 		tar->itype = HEAD; 
 	}
 	else {
@@ -142,10 +142,10 @@ int create_dir(const struct _tar_head* tar) {
 		return -1;
 	} 
 
-#ifdef WIN32
-	int res = mkdir(path);
-#else
+#ifdef __linux__
 	int res = mkdir(path, oct2uint(tar->mode, 7) & 0777);
+#elif WIN32
+	int res = mkdir(path);
 #endif
 	if(res) { 
 		printf("mkdir failed.\n");
@@ -157,19 +157,19 @@ int create_dir(const struct _tar_head* tar) {
 
 int open_file(const struct _tar_head* tar, int* start_new) {
 	int fd = -1;
-#ifdef WIN32
+#ifdef __linux
+	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC, oct2uint(tar->mode, 7) & 0777);
+	if(fd < 0) {
+		printf("Error: %s\n", __func__);
+		return -1;
+	}
+#elif WIN32
 	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, oct2uint(tar->mode, 7) & 0777);
 	if(fd < 0) {
 		printf("Error: %s, %d\n", __func__, errno);
 		if (errno == EACCES) {
 			printf("shit things happend.\n");
 		}
-		return -1;
-	}
-#elif __linux
-	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC, oct2uint(tar->mode, 7) & 0777);
-	if(fd < 0) {
-		printf("Error: %s\n", __func__);
 		return -1;
 	}
 #endif
