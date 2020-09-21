@@ -1,9 +1,23 @@
+﻿#define _CRT_NONSTDC_NO_DEPRECATE
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_DEPRECATE 
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <unistd.h>
+#ifdef __linux__
+	#include <unistd.h>
+#endif
+
+#ifdef WIN32
+	#include <direct.h>
+	#include <dirent.h>
+	#include <io.h>
+	#include <process.h>
+	#define ssize_t unsigned int 
+#endif
+
 #include <string.h>
 
 #define  lf_oldnormal '\0'       /* normal disk file, unix compatible */
@@ -60,22 +74,27 @@ unsigned int oct2uint(const char* src, int read_size) {
 
 int file_exist(const char* file_name) {
 	int fd = -1;
+#ifdef __linux__
 	if((fd = open(file_name, O_RDWR)) < 0)
 		return -1;
+#elif WIN32
+	if((fd = open(file_name, O_RDWR | _O_BINARY)) < 0)
+		return -1;
+#endif
 
 	return fd;
 }
 
 struct _tar_head* create_tar_block(const int fd, int* offsize) {
-	struct _tar_head* tar = (struct _tar_head*)malloc(sizeof(struct _tar_head));
-	tar->next = NULL;
-	tar->end = 0; 
-	int bytes = read(fd, tar->block, 512); 
+	struct _tar_head* tar = (struct _tar_head*)calloc(1,sizeof(struct _tar_head));
+	int bytes = _read(fd, tar->block, 512); 
 	if(bytes != 512) {
 		free(tar);
 		printf("not 512. is end.\n");
 		return NULL;
 	}
+
+	*offsize += bytes;
 
 	// simple check;
 	if( !strcmp(tar->ustar ,"ustar") || !strcmp(tar->ustar, "ustar  ") ) {
@@ -84,6 +103,8 @@ struct _tar_head* create_tar_block(const int fd, int* offsize) {
 	else {
 		tar->itype = BODY;
 	}
+
+	lseek(fd, *offsize, SEEK_SET);
 	
 	return tar;
 }
@@ -110,7 +131,7 @@ int parse_tar_block(const int fd, struct _tar_head** package) {
 	return count;
 }
 
-int create_dir(struct _tar_head* tar) {
+int create_dir(const struct _tar_head* tar) {
 	int len = strlen(tar->name);
 	char* path = calloc(len + 1, sizeof(char));
 	strncpy(path, tar->name, len);
@@ -123,19 +144,34 @@ int create_dir(struct _tar_head* tar) {
 		return -1;
 	} 
 
+#ifdef WIN32
+	int res = mkdir(path);
+#else
 	int res = mkdir(path, oct2uint(tar->mode, 7) & 0777);
+#endif
 	if(res) { 
 		printf("mkdir failed.\n");
 		return res;
 	}	
+
+	return 0;
 }
 
 int open_file(const struct _tar_head* tar, int* start_new) {
-	int fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC, oct2uint(tar->mode, 7) & 0777);
+	int fd = -1;
+#ifdef WIN32
+	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, oct2uint(tar->mode, 7) & 0777);
 	if(fd < 0) {
 		printf("Error: %s\n", __func__);
 		return -1;
 	}
+#elif __linux
+	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC, oct2uint(tar->mode, 7) & 0777);
+	if(fd < 0) {
+		printf("Error: %s\n", __func__);
+		return -1;
+	}
+#endif
 
 	if(!(*start_new) && 
 		lseek(fd, 0, SEEK_SET) == -1) {
@@ -180,8 +216,10 @@ int extract_tar_block(const struct _tar_head* tar) {
 				printf("extracting failed.\n");
 			}
 
-			close(fd); // close front fd 
-			fd = -1;
+			if (fd > 0) {
+				close(fd); // close front fd 
+				fd = -1;
+			}
 		}
 		else if(tar->type == lf_normal &&
 			tar->itype == HEAD) {
