@@ -8,9 +8,7 @@
 #include <stdlib.h>
 #ifdef __linux__
 	#include <unistd.h>
-#endif
-
-#ifdef WIN32
+#elif WIN32
 	#include <direct.h>
 	#include <dirent.h>
 	#include <io.h>
@@ -162,7 +160,10 @@ int open_file(const struct _tar_head* tar, int* start_new) {
 #ifdef WIN32
 	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, oct2uint(tar->mode, 7) & 0777);
 	if(fd < 0) {
-		printf("Error: %s\n", __func__);
+		printf("Error: %s, %d\n", __func__, errno);
+		if (errno == EACCES) {
+			printf("shit things happend.\n");
+		}
 		return -1;
 	}
 #elif __linux
@@ -183,8 +184,10 @@ int open_file(const struct _tar_head* tar, int* start_new) {
 }
 
 int write_file(const int fd, const struct _tar_head* tar, const unsigned int write_size, int* start_new) {
-	if(tar->itype == HEAD)
+	if (tar->itype == HEAD || fd < 0) {
+		printf("can't conver file. file already exist.\n");
 		return -1;
+	}
 
 	ssize_t size = write(fd, tar->block, write_size);
 	if(size < 0) {
@@ -279,6 +282,8 @@ int main(int argc, char** argv) {
 		printf("Error: extract tar failed.\n");
 		return res;
 	}
+
+	printf("DONE.\n");
 	return 0;
 }
 
