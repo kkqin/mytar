@@ -154,7 +154,7 @@ int recusive_mkdir(const char* name) {
 			*p = '\0';
 
 #ifdef	__linux__
-			mkdir(path, 0755);
+			mkdir(path, 755);
 #elif	WIN32
 			mkdir(path);
 #endif
@@ -227,7 +227,7 @@ static int extract_tar_block(const struct _tar_head* tar) {
 		if(tar->type == lf_dir && 
 			tar->itype == HEAD) {
 			if( create_dir(tar->name, oct2uint(tar->mode, 7) & 0777) < 0 ) {
-				printf("extracting failed.\n");
+				printf("create director failed.\n");
 			}
 
 			if (fd > 0) {
@@ -257,38 +257,13 @@ static int extract_tar_block(const struct _tar_head* tar) {
 	return 0;
 }
 
-int printf_tar_all_file(const int fd) {
-	struct _tar_head* tar = NULL;
-	parse_tar_block(fd, &tar);
-
+void print_tar_all_file(struct _tar_head* tar) {
 	while(tar) {
 		if (tar->itype == HEAD) {
 			printf("%s\n", tar->name);
 		}
 		tar = tar->next;
 	}
-
-	return 0;
-}
-
-int extract_all_file(const int fd) {
-	struct _tar_head* tar = NULL;
-	int part_time = parse_tar_block(fd, &tar);
-	if(!part_time) {
-		printf("Error: parsing failed.\n");
-		return part_time;
-	}
-	else{
-		printf("Read Part: %d\n", part_time);
-	}
-
-	int res = extract_tar_block(tar); 
-	if(res) {
-		printf("Error: extract tar failed.\n");
-		return res;
-	}
-
-	return 0;
 }
 
 static int extract_dir_tar_block(const struct _tar_head* tar, const char* name) {
@@ -400,28 +375,18 @@ static int extract_file_tar_block(const struct _tar_head* tar, const char* name)
 	return 0;
 }
 
-int extract_file(const int fd, const char * filename) {
+int extract_file(struct _tar_head* tar, const char* filename) {
 	if (filename && strlen(filename) > 100) {
 		printf("name invaild.\n");
 		return -1;
 	}
 
-	struct _tar_head* tar = NULL;
-	int part_time = parse_tar_block(fd, &tar);
-	if(!part_time) {
-		printf("Error: parsing failed.\n");
-		return part_time;
-	}
-	else{
-		printf("Read Part: %d\n", part_time);
-	}
-
-	if(filename) {
+	if (filename) {
 		extract_file_tar_block(tar, filename);
 		extract_dir_tar_block(tar, filename);
 	}
 	else {
-		extract_all_file(filename);
+		extract_tar_block(tar);
 	}
 	return 0;
 }

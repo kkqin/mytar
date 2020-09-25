@@ -39,9 +39,7 @@ int open_file(const struct _tar_head* tar, int* start_new);
 // 写入
 int write_file(const int fd, const struct _tar_head* tar, const unsigned int write_size, int* start_new);
 // 打印所有tar包文件
-int printf_tar_all_file(const int fd);
-// 解所有文件
-int extract_all_file(const int fd);
+void print_tar_all_file(struct _tar_head* tar);
 // 解特定文件
-int extract_file(const int fd, const char* filename);
+int extract_file(struct _tar_head* tar, const char* filename);
 #endif

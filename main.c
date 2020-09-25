@@ -22,13 +22,20 @@ int main(int argc, char** argv) {
 	}
 
 	const char* file = argv[3];
-	//printf("destination file: %s\n", file);
-	printf_tar_all_file(fd);
-	//extract_all_file(fd);
-	//extract_file(fd, "mytar/main.c");
-	//extract_file(fd, "mytar/.git/config");
-	//extract_file(fd, "mytar");
-	extract_file(fd, file);
+	printf("destination file: %s\n", file);
+
+	struct _tar_head* tar = NULL;
+	int part_time = parse_tar_block(fd, &tar);
+	if(!part_time) {
+		printf("Error: parsing failed.\n");
+		return part_time;
+	}
+	else{
+		printf("Read Part: %d\n", part_time);
+	}
+
+	print_tar_all_file(tar);
+	extract_file(tar, file);
 
 	printf("DONE.\n");
 	return 0;
