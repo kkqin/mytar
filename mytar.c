@@ -401,7 +401,7 @@ static int extract_file_tar_block(const struct _tar_head* tar, const char* name)
 }
 
 int extract_file(const int fd, const char * filename) {
-	if (strlen(filename) > 100) {
+	if (filename && strlen(filename) > 100) {
 		printf("name invaild.\n");
 		return -1;
 	}
@@ -416,7 +416,12 @@ int extract_file(const int fd, const char * filename) {
 		printf("Read Part: %d\n", part_time);
 	}
 
-	extract_file_tar_block(tar, filename);
-	extract_dir_tar_block(tar, filename);
+	if(filename) {
+		extract_file_tar_block(tar, filename);
+		extract_dir_tar_block(tar, filename);
+	}
+	else {
+		extract_all_file(filename);
+	}
 	return 0;
 }
