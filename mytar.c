@@ -282,10 +282,10 @@ static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 	return 0;
 }
 
-int check_file_hash(const TAR_HEAD* tar, const char* filename) {
+unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename) {
 	if(!filename) {
 		printf("file hash:name empty");
-		return -1;
+		return NULL;
 	}
 
 	while (tar) {
@@ -297,15 +297,16 @@ int check_file_hash(const TAR_HEAD* tar, const char* filename) {
 
 	if(!tar || tar->itype != HEAD) {
 		printf("file hash:can't find the file.");
-		return -1;
+		return NULL;
 	}
 
 	ssize_t body_write_size = oct2uint(tar->size, 11);
 	if(!body_write_size)
-		return -1;
+		return NULL;
 
 	picohash_ctx_t ctx;
-	unsigned char digest[PICOHASH_MD5_DIGEST_LENGTH];
+	unsigned char* digest = (unsigned char*)malloc(sizeof(char)*PICOHASH_MD5_DIGEST_LENGTH);
+	//unsigned char digest[PICOHASH_MD5_DIGEST_LENGTH];
 
 	picohash_init_md5(&ctx);
 
@@ -323,10 +324,10 @@ int check_file_hash(const TAR_HEAD* tar, const char* filename) {
 		}
 	}
 	picohash_final(&ctx, digest);
-	for(int i = 0; i < PICOHASH_MD5_DIGEST_LENGTH; i++) 
+	/*for(int i = 0; i < PICOHASH_MD5_DIGEST_LENGTH; i++) 
 		printf("%02x", digest[i]); 
-	printf("\n");
-	return 0;
+	printf("\n");*/
+	return digest;
 }
 
 static int extract_file_tar_block(const TAR_HEAD* tar, const char* name) {

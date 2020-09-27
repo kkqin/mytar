@@ -85,5 +85,5 @@ int write_file(const int fd, const TAR_HEAD* tar, const unsigned int write_size,
 void print_tar_all_file(TAR_HEAD* tar);
 // 解特定文件
 int extract_file(TAR_HEAD* tar, const char* filename);
-int check_file_hash(const TAR_HEAD* tar, const char* filename);
+unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename);
 #endif

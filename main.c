@@ -38,8 +38,11 @@ int main(int argc, char** argv) {
 
 	print_tar_all_file(tar);
 	//extract_file(tar, file);
-	check_file_hash(tar, file);
+	unsigned char* digest = check_file_hash(tar, file);
+	for(int i = 0; i < 16; i++) 
+		printf("%02x", digest[i]);
 
+	printf(" %s\n", file);
 	printf("DONE.\n");
 	return 0;
 }
