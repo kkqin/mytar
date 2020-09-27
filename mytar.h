@@ -68,7 +68,7 @@ typedef struct _tar_head {
 // 8 进制转 10进制
 unsigned int oct2uint(const char* src, int read_size);
 // 文件存在
-int file_exist(const char* file_name);
+int file_exist(const char* filename);
 // 创建tar块
 TAR_HEAD* create_tar_block(const int fd, int* offsize);
 // 解析tar块
@@ -76,7 +76,7 @@ int parse_tar_block(const int fd, TAR_HEAD** package);
 // 创建单个目录
 int create_dir(const char* tar, int mode);
 // 创建目录
-int recusive_mkdir(const char* name);
+int recusive_mkdir(const char* dirname);
 // 打开tar 块
 int open_file(const TAR_HEAD* tar, int* start_new);
 // 写入
@@ -85,5 +85,5 @@ int write_file(const int fd, const TAR_HEAD* tar, const unsigned int write_size,
 void print_tar_all_file(TAR_HEAD* tar);
 // 解特定文件
 int extract_file(TAR_HEAD* tar, const char* filename);
-int check_file_hash(const TAR_HEAD* tar, const char* name);
+int check_file_hash(const TAR_HEAD* tar, const char* filename);
 #endif

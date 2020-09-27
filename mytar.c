@@ -11,13 +11,13 @@ unsigned int oct2uint(const char* src, int read_size) {
 	return result;
 }
 
-int file_exist(const char* file_name) {
+int file_exist(const char* filename) {
 	int fd = -1;
 #ifdef __linux__
-	if((fd = open(file_name, O_RDWR)) < 0)
+	if((fd = open(filename, O_RDWR)) < 0)
 		return -1;
 #elif WIN32
-	if((fd = open(file_name, O_RDWR | _O_BINARY)) < 0)
+	if((fd = open(filename, O_RDWR | _O_BINARY)) < 0)
 		return -1;
 #endif
 
@@ -97,13 +97,13 @@ int create_dir(const char* name, int mode) {
 	return 0;
 }
 
-int recusive_mkdir(const char* name) {
-	const size_t len = strlen(name);
+int recusive_mkdir(const char* dirname) {
+	const size_t len = strlen(dirname);
 	if (!len)
 		return -1;
 
 	char* path = calloc(len + 1, sizeof(char));
-	strncpy(path, name, len);
+	strncpy(path, dirname, len);
 
 	if (path[len - 1] == '/')
 		path[len - 1] = 0;
@@ -282,14 +282,14 @@ static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 	return 0;
 }
 
-int check_file_hash(const TAR_HEAD* tar, const char* name) {
-	if(!name) {
+int check_file_hash(const TAR_HEAD* tar, const char* filename) {
+	if(!filename) {
 		printf("file hash:name empty");
 		return -1;
 	}
 
 	while (tar) {
-		if (strstr(tar->name, name) != NULL) {
+		if (strstr(tar->name, filename) != NULL) {
 			break;
 		}
 		tar = tar->next;
