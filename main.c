@@ -2,6 +2,7 @@
 #include "Configure.h"
 
 int main(int argc, char** argv) {
+	printf("version %d.%d\n", MYTAR_VERSION_MAJOR, MYTAR_VERSION_MINOR);
 
 	if(argc < 3) {
 		printf("Error: arguments less.\n");
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
 	const char* file = argv[3];
 	printf("destination file: %s\n", file);
 
-	struct _tar_head* tar = NULL;
+	TAR_HEAD* tar = NULL;
 	int part_time = parse_tar_block(fd, &tar);
 	if(!part_time) {
 		printf("Error: parsing failed.\n");
@@ -36,7 +37,8 @@ int main(int argc, char** argv) {
 	}
 
 	print_tar_all_file(tar);
-	extract_file(tar, file);
+	//extract_file(tar, file);
+	check_file_hash(tar, "test/README.md");
 
 	printf("DONE.\n");
 	return 0;

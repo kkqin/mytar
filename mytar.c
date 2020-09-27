@@ -1,4 +1,5 @@
 #include "mytar.h"
+#include "picohash.h"
 
 unsigned int oct2uint(const char* src, int read_size) {
 	unsigned int result = 0; // 下标从0开始	
@@ -23,8 +24,8 @@ int file_exist(const char* file_name) {
 	return fd;
 }
 
-struct _tar_head* create_tar_block(const int fd, int* offsize) {
-	struct _tar_head* tar = (struct _tar_head*)calloc(1,sizeof(struct _tar_head));
+TAR_HEAD* create_tar_block(const int fd, int* offsize) {
+	TAR_HEAD* tar = (TAR_HEAD*)calloc(1,sizeof(TAR_HEAD));
 	int bytes = read(fd, tar->block, 512); 
 	if(bytes != 512) {
 		free(tar);
@@ -47,12 +48,12 @@ struct _tar_head* create_tar_block(const int fd, int* offsize) {
 	return tar;
 }
 
-int parse_tar_block(const int fd, struct _tar_head** package) {
+int parse_tar_block(const int fd, TAR_HEAD** package) {
 	int count = 0;
 	int offsize = 0;
-	struct _tar_head* head = NULL, *tail = NULL;
+	TAR_HEAD* head = NULL, *tail = NULL;
 	while(1) {
-		struct _tar_head* tar = create_tar_block(fd, &offsize); 
+		TAR_HEAD* tar = create_tar_block(fd, &offsize); 
 		if(head == NULL && tail == NULL) {
 			head = tail = tar;
 		}
@@ -112,7 +113,7 @@ int recusive_mkdir(const char* name) {
 			*p = '\0';
 
 #ifdef	__linux__
-			mkdir(path, 755);
+			mkdir(path, 0755);
 #elif	WIN32
 			mkdir(path);
 #endif
@@ -125,7 +126,7 @@ int recusive_mkdir(const char* name) {
 	return 0;
 }
 
-int open_file(const struct _tar_head* tar, int* start_new) {
+int open_file(const TAR_HEAD* tar, int* start_new) {
 	int fd = -1;
 #ifdef __linux
 	fd = open(tar->name, O_WRONLY|O_CREAT|O_TRUNC, oct2uint(tar->mode, 7) & 0777);
@@ -153,7 +154,7 @@ int open_file(const struct _tar_head* tar, int* start_new) {
 	return fd;
 }
 
-int write_file(const int fd, const struct _tar_head* tar, const unsigned int write_size, int* start_new) {
+int write_file(const int fd, const TAR_HEAD* tar, const unsigned int write_size, int* start_new) {
 	if (tar->itype == HEAD || fd < 0) {
 		printf("can't convert file. file already exist.\n");
 		return -1;
@@ -170,7 +171,7 @@ int write_file(const int fd, const struct _tar_head* tar, const unsigned int wri
 	return 0;
 }
 
-static int extract_tar_block(const struct _tar_head* tar) {
+static int extract_tar_block(const TAR_HEAD* tar) {
 
 	ssize_t body_write_size = 0;
 	int start_new = 0;
@@ -215,7 +216,7 @@ static int extract_tar_block(const struct _tar_head* tar) {
 	return 0;
 }
 
-void print_tar_all_file(struct _tar_head* tar) {
+void print_tar_all_file(TAR_HEAD* tar) {
 	while(tar) {
 		if (tar->itype == HEAD) {
 			printf("%s\n", tar->name);
@@ -224,7 +225,7 @@ void print_tar_all_file(struct _tar_head* tar) {
 	}
 }
 
-static int extract_dir_tar_block(const struct _tar_head* tar, const char* name) {
+static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 	recusive_mkdir(name);
 
 	while(tar) {
@@ -281,7 +282,47 @@ static int extract_dir_tar_block(const struct _tar_head* tar, const char* name) 
 	return 0;
 }
 
-static int extract_file_tar_block(const struct _tar_head* tar, const char* name) {
+int check_file_hash(const TAR_HEAD* tar, const char* name) {
+	while (tar) {
+		if (strstr(tar->name, name) != NULL) {
+			break;
+		}
+		tar = tar->next;
+	}
+
+	if(tar->itype != HEAD) 
+		return -1;
+
+	ssize_t body_write_size = oct2uint(tar->size, 11);
+	if(!body_write_size)
+		return -1;
+
+	picohash_ctx_t ctx;
+	unsigned char digest[PICOHASH_MD5_DIGEST_LENGTH];
+
+	picohash_init_md5(&ctx);
+
+	int tmp_size = body_write_size;
+	for(;tmp_size; tar = tar->next) {
+		if(tar->itype != BODY)
+			continue;
+		int blockSize = sizeof(tar->block);
+		if(tmp_size < 512)
+		    blockSize = tmp_size;
+		picohash_update(&ctx, tar->block, blockSize);
+		tmp_size -= blockSize;
+		if(tmp_size <= 0) {
+			break;
+		}
+	}
+	picohash_final(&ctx, digest);
+	for(int i = 0; i < PICOHASH_MD5_DIGEST_LENGTH; i++) 
+		printf("%02x", digest[i]); 
+	printf("\n");
+	return 0;
+}
+
+static int extract_file_tar_block(const TAR_HEAD* tar, const char* name) {
 
 	ssize_t body_write_size = 0;
 	int start_new = 0;
@@ -306,8 +347,11 @@ static int extract_file_tar_block(const struct _tar_head* tar, const char* name)
 			afile++;
 		}
 
-		if (afile >= 2)
+		if (afile >= 2) {
+			free(tar);
+			close(fd);
 			break;
+		}
 
 		if(tar->type == lf_normal &&
 			tar->itype == HEAD) {
@@ -333,7 +377,7 @@ static int extract_file_tar_block(const struct _tar_head* tar, const char* name)
 	return 0;
 }
 
-int extract_file(struct _tar_head* tar, const char* filename) {
+int extract_file(TAR_HEAD* tar, const char* filename) {
 	if (filename && strlen(filename) > 100) {
 		printf("name invaild.\n");
 		return -1;
