@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 
 	print_tar_all_file(tar);
 	//extract_file(tar, file);
-	check_file_hash(tar, "test/README.md");
+	check_file_hash(tar, file);
 
 	printf("DONE.\n");
 	return 0;

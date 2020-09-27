@@ -283,6 +283,11 @@ static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 }
 
 int check_file_hash(const TAR_HEAD* tar, const char* name) {
+	if(!name) {
+		printf("file hash:name empty");
+		return -1;
+	}
+
 	while (tar) {
 		if (strstr(tar->name, name) != NULL) {
 			break;
@@ -290,8 +295,10 @@ int check_file_hash(const TAR_HEAD* tar, const char* name) {
 		tar = tar->next;
 	}
 
-	if(tar->itype != HEAD) 
+	if(!tar || tar->itype != HEAD) {
+		printf("file hash:can't find the file.");
 		return -1;
+	}
 
 	ssize_t body_write_size = oct2uint(tar->size, 11);
 	if(!body_write_size)
