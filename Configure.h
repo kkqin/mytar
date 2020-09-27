@@ -1,0 +1,3 @@
+#define MYTAR_VERSION_MAJOR 1
+#define MYTAR_VERSION_MINOR 0
+/* #undef USE_MYTAR */

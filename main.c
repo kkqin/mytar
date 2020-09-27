@@ -1,4 +1,5 @@
 ﻿#include "mytar.h"
+#include "Configure.h"
 
 int main(int argc, char** argv) {
 
