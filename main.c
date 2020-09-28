@@ -1,48 +1,79 @@
 ﻿#include "mytar.h"
 #include "Configure.h"
 
+void print_hash(const unsigned char* digest, const char* filename); 
 int main(int argc, char** argv) {
 	printf("version %d.%d\n", MYTAR_VERSION_MAJOR, MYTAR_VERSION_MINOR);
 
 	if(argc < 3) {
-		printf("Error: arguments less.\n");
+		fprintf(stderr, "arguments less.\n");
 		return -1;
 	}
 
-	if(argv[1][0] != 'x') {
-		printf("Error: only support 'x'.\n");
+	if(argv[1][0] != 'x' && argv[1][0] != 'p') {
+		fprintf(stderr, "Error: only support 'x' 'p' 'e' 'h'.\n");
+		fprintf(stderr, "Usage: %s 'p' tarfile.\n", argv[0]);
+		fprintf(stderr, "Usage: %s 'x' tarfile 'e' tarfile/file.\n", argv[0]);
+		fprintf(stderr, "Usage: %s 'x' tarfile 'h' tarfile/file.\n", argv[0]);
 		return -1;
 	}
-	
+
 	char *target_file = argv[2];
-	printf("target file: %s\n", target_file);
+	fprintf(stderr, "target file: %s\n", target_file);
 
 	int fd = file_exist(target_file); 
 	if(fd < 0) {
-		printf("Error: file doesn't exist.\n");
+		fprintf(stderr, "Error: file doesn't exist.\n");
 		return -1;
 	}
-
-	const char* file = argv[3];
-	printf("destination file: %s\n", file);
 
 	TAR_HEAD* tar = NULL;
 	int part_time = parse_tar_block(fd, &tar);
 	if(!part_time) {
-		printf("Error: parsing failed.\n");
+		fprintf(stderr, "Error: parsing failed.\n");
 		return part_time;
 	}
-	else{
-		printf("Read Part: %d\n", part_time);
+	else {
+		//fprintf(stderr, "Read Part: %d\n", part_time);
 	}
 
-	print_tar_all_file(tar);
-	//extract_file(tar, file);
-	unsigned char* digest = check_file_hash(tar, file);
+	char *file = argv[3];
+
+	if(argv[1][0] == 'p') {
+		printf("file are: \n");
+		// 打印所有
+		print_tar_all_file(tar);
+		printf("\n");
+	}
+
+	char option = 0;
+	if(argc > 3) {
+		file = argv[4];
+		option = argv[3][0];
+	
+		if(file == NULL) {
+			printf("file error.\n");
+			return -1;
+		}
+	}
+
+	if(option == 'h') {
+		// 查看文件hash
+		unsigned char* digest = check_file_hash(tar, file);
+		print_hash(digest, file);
+	}
+	else if(option == 'e') {
+		// 解文件/多个/单个
+		extract_file(tar, file);
+	}
+
+	//printf("DONE.\n");
+	free_tar_head(tar);
+	return 0;
+}
+
+void print_hash(const unsigned char* digest, const char* filename) {
 	for(int i = 0; i < 16; i++) 
 		printf("%02x", digest[i]);
-
-	printf(" %s\n", file);
-	printf("DONE.\n");
-	return 0;
+	printf("%s\n", filename);
 }

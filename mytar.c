@@ -29,7 +29,7 @@ TAR_HEAD* create_tar_block(const int fd, int* offsize) {
 	int bytes = read(fd, tar->block, 512); 
 	if(bytes != 512) {
 		free(tar);
-		printf("not 512. is end.\n");
+		//printf("not 512. is end.\n");
 		return NULL;
 	}
 
@@ -228,6 +228,7 @@ void print_tar_all_file(TAR_HEAD* tar) {
 static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 	recusive_mkdir(name);
 
+	TAR_HEAD* save = tar;
 	while(tar) {
 		if(tar->type == lf_dir && strstr(tar->name, name) != NULL) {
 			break;
@@ -282,12 +283,17 @@ static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 	return 0;
 }
 
+static void back_tracking(const TAR_HEAD* past, TAR_HEAD* now) {
+	now = past;
+}
+
 unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename) {
 	if(!filename) {
 		printf("file hash:name empty");
 		return NULL;
 	}
 
+	TAR_HEAD* save = tar;
 	while (tar) {
 		if (strstr(tar->name, filename) != NULL) {
 			break;
@@ -297,16 +303,18 @@ unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename) {
 
 	if(!tar || tar->itype != HEAD) {
 		printf("file hash:can't find the file.");
+		back_tracking(save, tar);
 		return NULL;
 	}
 
 	ssize_t body_write_size = oct2uint(tar->size, 11);
-	if(!body_write_size)
+	if(!body_write_size) {
+		back_tracking(save, tar);
 		return NULL;
+	}
 
 	picohash_ctx_t ctx;
 	unsigned char* digest = (unsigned char*)malloc(sizeof(char)*PICOHASH_MD5_DIGEST_LENGTH);
-	//unsigned char digest[PICOHASH_MD5_DIGEST_LENGTH];
 
 	picohash_init_md5(&ctx);
 
@@ -323,10 +331,9 @@ unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename) {
 			break;
 		}
 	}
+
 	picohash_final(&ctx, digest);
-	/*for(int i = 0; i < PICOHASH_MD5_DIGEST_LENGTH; i++) 
-		printf("%02x", digest[i]); 
-	printf("\n");*/
+	back_tracking(save, tar);
 	return digest;
 }
 
@@ -337,6 +344,8 @@ static int extract_file_tar_block(const TAR_HEAD* tar, const char* name) {
 	int fd = -1;
 
 	recusive_mkdir(name);
+
+	TAR_HEAD* save = tar;
 
 	while (tar) {
 		if (strstr(tar->name, name) != NULL) {
@@ -382,6 +391,7 @@ static int extract_file_tar_block(const TAR_HEAD* tar, const char* name) {
 		tar = tar->next;
 	}
 
+	tar = save;
 	return 0;
 }
 
@@ -398,5 +408,10 @@ int extract_file(TAR_HEAD* tar, const char* filename) {
 	else {
 		extract_tar_block(tar);
 	}
+	return 0;
+}
+
+int free_tar_head(TAR_HEAD* tar) {
+	free(tar);
 	return 0;
 }
