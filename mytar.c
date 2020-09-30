@@ -1,6 +1,8 @@
 #include "mytar.h"
 #include "picohash.h"
 
+#define BLOCKSIZE 512
+
 unsigned int oct2uint(const char* src, int read_size) {
 	unsigned int result = 0; // 下标从0开始	
 	int i = 0;
@@ -26,26 +28,49 @@ int file_exist(const char* filename) {
 
 TAR_HEAD* create_tar_block(const int fd, int* offsize) {
 	TAR_HEAD* tar = (TAR_HEAD*)calloc(1,sizeof(TAR_HEAD));
-	int bytes = read(fd, tar->block, 512); 
-	if(bytes != 512) {
+	int bytes = read(fd, tar->block, BLOCKSIZE); 
+	if(bytes != BLOCKSIZE) {
 		free(tar);
-		//printf("not 512. is end.\n");
+		//printf("not BLOCKSIZE. is end.\n");
 		return NULL;
 	}
 
 	*offsize += bytes;
 
 	// simple check;
-	if(!strncmp(tar->ustar ,"ustar", 5)) {
+	/*if(!strncmp(tar->ustar ,"ustar", 5)) {
 		tar->itype = HEAD; 
 	}
 	else {
 		tar->itype = BODY;
-	}
+	}*/
 
 	lseek(fd, *offsize, SEEK_SET);
 	
 	return tar;
+}
+
+int 
+judge_head(TAR_HEAD* tar) {
+	TAR_HEAD* prev = tar->prev;
+	if(prev == NULL) {
+		tar->itype = HEAD;
+		return -1;
+	}
+
+	ssize_t file_size = oct2uint(prev->size, 11);
+	ssize_t block_size = strlen(tar->block) + 1;
+	if(prev->type == lf_longname 
+		&& file_size == block_size  
+		&& !strncmp(prev->ustar, "ustar", 5)) {
+		tar->itype = LONGNAME_HEAD;
+	}
+	else if(!strncmp(tar->ustar, "ustar", 5)){
+		tar->itype = HEAD;
+	}
+	else {
+		tar->itype = BODY;
+	}
 }
 
 int parse_tar_block(const int fd, TAR_HEAD** package) {
@@ -60,9 +85,13 @@ int parse_tar_block(const int fd, TAR_HEAD** package) {
 
 		if(tar == NULL)
 			break;
-
+		
+		tar->prev = tail;
 		tail->next = tar;
 		tail = tar;
+
+		judge_head(tar);
+
 		count++;
 	}
 
@@ -200,7 +229,7 @@ static int extract_tar_block(const TAR_HEAD* tar) {
 		}
 		else if(tar->itype == BODY) {
 			unsigned int blockSize = sizeof(tar->block);
-			if(body_write_size < 512)
+			if(body_write_size < BLOCKSIZE)
 				blockSize = body_write_size;
 			write_file(fd, tar, blockSize, &start_new);
 			body_write_size -= blockSize;
@@ -218,8 +247,11 @@ static int extract_tar_block(const TAR_HEAD* tar) {
 
 void print_tar_all_file(TAR_HEAD* tar) {
 	while(tar) {
-		if (tar->itype == HEAD) {
-			printf("%s\n", tar->name);
+		if (tar->itype == LONGNAME_HEAD) {
+			printf("%s\n", tar->block);
+		}
+		else if (tar->itype == HEAD && tar->type != lf_longname && tar->prev->itype != LONGNAME_HEAD) {
+			printf("%.*s\n", 100, tar->name);
 		}
 		tar = tar->next;
 	}
@@ -267,7 +299,7 @@ static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
 		}
 		else if(tar->itype == BODY) {
 			unsigned int blockSize = sizeof(tar->block);
-			if(body_write_size < 512)
+			if(body_write_size < BLOCKSIZE)
 				blockSize = body_write_size;
 			write_file(fd, tar, blockSize, &start_new);
 			body_write_size -= blockSize;
@@ -323,7 +355,7 @@ unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename) {
 		if(tar->itype != BODY)
 			continue;
 		int blockSize = sizeof(tar->block);
-		if(tmp_size < 512)
+		if(tmp_size < BLOCKSIZE)
 		    blockSize = tmp_size;
 		picohash_update(&ctx, tar->block, blockSize);
 		tmp_size -= blockSize;
@@ -376,7 +408,7 @@ static int extract_file_tar_block(const TAR_HEAD* tar, const char* name) {
 		}
 		else if(tar->itype == BODY) {
 			unsigned int blockSize = sizeof(tar->block);
-			if(body_write_size < 512)
+			if(body_write_size < BLOCKSIZE)
 				blockSize = body_write_size;
 			write_file(fd, tar, blockSize, &start_new);
 			body_write_size -= blockSize;

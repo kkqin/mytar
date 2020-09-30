@@ -30,12 +30,14 @@
 #define  lf_dir       '5'        /* directory */
 #define  lf_fifo      '6'        /* fifo special file */
 #define  lf_contig    '7'        /* contiguous file */
+#define  lf_longname  'L'        
 
 #include "picohash.h"
 
 enum {
 	 HEAD = 1,
-	 BODY 
+	 BODY,
+	 LONGNAME_HEAD
 };
 
 #pragma pack(1) 
@@ -62,8 +64,21 @@ typedef struct _tar_head {
 
 	int itype;
 	int end;
+	struct _tar_head* prev;
 	struct _tar_head* next;
 } TAR_HEAD;
+
+#define object TAR_HEAD
+typedef struct _node {
+	int key; 
+	object* obj;
+	struct _node* forward[1];
+}node;
+
+typedef struct _skiplist {
+	int level;
+	struct _node* head;
+}skiplist;
 
 // 8 进制转 10进制
 unsigned int oct2uint(const char* src, int read_size);
