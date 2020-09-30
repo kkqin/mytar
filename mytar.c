@@ -86,6 +86,7 @@ int parse_tar_block(const int fd, TAR_HEAD** package, skiplist* skp) {
 		judge_head(tar);
 
 		// go index
+		if(skp != NULL)
 		if (tar->itype == LONGNAME_HEAD) {
 			insert_node(skp, key++, tar); 
 		}
