@@ -89,7 +89,7 @@ int file_exist(const char* filename);
 // 创建tar块
 TAR_HEAD* create_tar_block(const int fd, int* offsize);
 // 解析tar块
-int parse_tar_block(const int fd, TAR_HEAD** package);
+int parse_tar_block(const int fd, TAR_HEAD** package, skiplist* skp);
 // 创建单个目录
 int create_dir(const char* tar, int mode);
 // 创建目录

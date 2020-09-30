@@ -37,21 +37,12 @@ TAR_HEAD* create_tar_block(const int fd, int* offsize) {
 
 	*offsize += bytes;
 
-	// simple check;
-	/*if(!strncmp(tar->ustar ,"ustar", 5)) {
-		tar->itype = HEAD; 
-	}
-	else {
-		tar->itype = BODY;
-	}*/
-
 	lseek(fd, *offsize, SEEK_SET);
 	
 	return tar;
 }
 
-int 
-judge_head(TAR_HEAD* tar) {
+int judge_head(TAR_HEAD* tar) {
 	TAR_HEAD* prev = tar->prev;
 	if(prev == NULL) {
 		tar->itype = HEAD;
@@ -73,10 +64,12 @@ judge_head(TAR_HEAD* tar) {
 	}
 }
 
-int parse_tar_block(const int fd, TAR_HEAD** package) {
+int parse_tar_block(const int fd, TAR_HEAD** package, skiplist* skp) {
 	int count = 0;
 	int offsize = 0;
 	TAR_HEAD* head = NULL, *tail = NULL;
+	int key = 1;
+
 	while(1) {
 		TAR_HEAD* tar = create_tar_block(fd, &offsize); 
 		if(head == NULL && tail == NULL) {
@@ -91,6 +84,14 @@ int parse_tar_block(const int fd, TAR_HEAD** package) {
 		tail = tar;
 
 		judge_head(tar);
+
+		// go index
+		if (tar->itype == LONGNAME_HEAD) {
+			insert_node(skp, key++, tar); 
+		}
+		else if (tar->itype == HEAD && tar->type != lf_longname && tar->prev->itype != LONGNAME_HEAD) {
+			insert_node(skp, key++, tar); 
+		}
 
 		count++;
 	}

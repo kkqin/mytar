@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
 	}
 
 	TAR_HEAD* tar = NULL;
-	int part_time = parse_tar_block(fd, &tar);
+	skiplist* skp = create_skiplist();
+	int part_time = parse_tar_block(fd, &tar, skp);
 	if(!part_time) {
 		fprintf(stderr, "Error: parsing failed.\n");
 		return part_time;
