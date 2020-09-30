@@ -27,7 +27,7 @@ int file_exist(const char* filename) {
 }
 
 TAR_HEAD* create_tar_block(const int fd, int* offsize) {
-	TAR_HEAD* tar = (TAR_HEAD*)calloc(1,sizeof(TAR_HEAD));
+	TAR_HEAD* tar = (TAR_HEAD*)calloc(1, sizeof(TAR_HEAD));
 	int bytes = read(fd, tar->block, BLOCKSIZE); 
 	if(bytes != BLOCKSIZE) {
 		free(tar);

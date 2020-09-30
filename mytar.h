@@ -68,19 +68,19 @@ typedef struct _tar_head {
 	struct _tar_head* next;
 } TAR_HEAD;
 
+#define MAX_LEVEL 8
+
 #define object TAR_HEAD
 typedef struct _node {
 	int key; 
 	object* obj;
-	struct _node* forward[1];
+	struct _node* forward[MAX_LEVEL];
 }node;
 
 typedef struct _skiplist {
 	int level;
 	struct _node* head;
 }skiplist;
-
-#define MAX_LEVEL 8
 
 // 8 进制转 10进制
 unsigned int oct2uint(const char* src, int read_size);
