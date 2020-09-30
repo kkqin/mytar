@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
 		extract_file(tar, file);
 	}
 
-	//printf("DONE.\n");
+	printf("DONE.\n");
+	print(skp);
 	free_tar_head(tar);
 	return 0;
 }

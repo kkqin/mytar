@@ -48,9 +48,9 @@ void insert_node(struct _skiplist* skp, int key, object* obj) {
         }
 
         struct _node* nd = create_node(lv, key, obj);
-        for(int h_lv = skp->level; h_lv >= 0; h_lv--) {
-                nd->forward[h_lv] = update[h_lv]->forward[h_lv]; // 新节点的尾等于位置的尾
-                update[h_lv]->forward[h_lv] = nd;
+        for(int i = 0; i <= level; i++) {
+                nd->forward[i] = update[i]->forward[i]; // 新节点的尾等于位置的尾
+                update[i]->forward[i] = nd;
         }
 }
 
@@ -72,6 +72,23 @@ struct _node *find(struct _skiplist *skp, int key)
         }
 
         return NULL;
+}
+
+void print(skiplist *sl)
+{
+        node *nd;
+        int i;
+
+        for (i = 0; i <= MAX_LEVEL; i++) {
+                nd = sl->head->forward[i];
+                printf("Level[%d]:", i);
+
+                while (nd) {
+                        printf("%d -> ", nd->key);
+                        nd = nd->forward[i];
+                }
+                printf("\n");
+        }
 }
 
 

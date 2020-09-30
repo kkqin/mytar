@@ -109,4 +109,5 @@ int free_tar_head(TAR_HEAD* tar);
 struct _node* create_node(int level, int key, object* obj);
 struct _skiplist* create_skiplist(void);
 void insert_node(struct _skiplist* skp, int key, object* obj);
+void print(skiplist *sl);
 #endif
