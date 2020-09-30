@@ -80,6 +80,8 @@ typedef struct _skiplist {
 	struct _node* head;
 }skiplist;
 
+#define MAX_LEVEL 8
+
 // 8 进制转 10进制
 unsigned int oct2uint(const char* src, int read_size);
 // 文件存在
@@ -102,4 +104,9 @@ void print_tar_all_file(TAR_HEAD* tar);
 int extract_file(TAR_HEAD* tar, const char* filename);
 unsigned char* check_file_hash(const TAR_HEAD* tar, const char* filename);
 int free_tar_head(TAR_HEAD* tar);
+
+///////////// skiplist
+struct _node* create_node(int level, int key, object* obj);
+struct _skiplist* create_skiplist(void);
+void insert_node(struct _skiplist* skp, int key, object* obj);
 #endif
