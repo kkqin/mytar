@@ -21,23 +21,30 @@ struct _skiplist* create_skiplist(void) {
 
 static int random_level()
 {
+	/*srand(time(NULL));
         int level = 1;
         while ((rand() & 0xFFFF) < (0.5 * 0xFFFF)) {
                 level += 1;
         }
-        return (level < MAX_LEVEL) ? level : MAX_LEVEL;
+        return (level < MAX_LEVEL) ? level : MAX_LEVEL;*/
+	int level = 1;
+        const double p = 0.25;
+        while ((rand() & 0xffff) < 0xffff * p) {
+                level++;
+        }
+        return level > MAX_LEVEL ? MAX_LEVEL : level;
 }
 
 void insert_node(struct _skiplist* skp, int key, object* obj) {
         struct _node *update[MAX_LEVEL];
-        struct _node* p, *q;
+        struct _node* p;
         p = skp->head;
         int level = skp->level;
 
-        for(; level >= 0; level--) {
-                while(p->forward[level] != NULL && p->forward[level]->key < key)
-                        p = p->forward[level]; // 这级中往前走
-                update[level] = p; // 找到最后的位置
+        for(int i = level - 1; i >= 0; i--) {
+                while(p->forward[i] != NULL && p->forward[i]->key < key)
+                        p = p->forward[i]; // 这级中往前走
+                update[i] = p; // 找到最后的位置
         }
 
         int lv = random_level();
@@ -47,10 +54,10 @@ void insert_node(struct _skiplist* skp, int key, object* obj) {
                 skp->level = lv;
         }
 
-        struct _node* nd = create_node(lv, key, obj);
-        for(int i = 0; i < skp->level; i++) {
-                nd->forward[i] = update[i]->forward[i]; // 新节点的尾等于位置的尾
-                update[i]->forward[i] = nd;
+        p = create_node(lv, key, obj);
+        for(int i = 0; i < lv; i++) {
+                p->forward[i] = update[i]->forward[i]; // 新节点的尾等于位置的尾
+                update[i]->forward[i] = p;
         }
 }
 
