@@ -21,18 +21,18 @@ struct _skiplist* create_skiplist(void) {
 
 static int random_level()
 {
-	/*srand(time(NULL));
+	//srand(time(NULL));
         int level = 1;
         while ((rand() & 0xFFFF) < (0.5 * 0xFFFF)) {
                 level += 1;
         }
-        return (level < MAX_LEVEL) ? level : MAX_LEVEL;*/
-	int level = 1;
+        return (level < MAX_LEVEL) ? level : MAX_LEVEL;
+	/*int level = 1;
         const double p = 0.25;
         while ((rand() & 0xffff) < 0xffff * p) {
                 level++;
         }
-        return level > MAX_LEVEL ? MAX_LEVEL : level;
+        return level > MAX_LEVEL ? MAX_LEVEL : level;*/
 }
 
 void insert_node(struct _skiplist* skp, int key, object* obj) {
