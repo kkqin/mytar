@@ -48,7 +48,7 @@ void insert_node(struct _skiplist* skp, int key, object* obj) {
         }
 
         struct _node* nd = create_node(lv, key, obj);
-        for(int i = 0; i <= level; i++) {
+        for(int i = 0; i < skp->level; i++) {
                 nd->forward[i] = update[i]->forward[i]; // 新节点的尾等于位置的尾
                 update[i]->forward[i] = nd;
         }
