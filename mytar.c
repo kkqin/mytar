@@ -248,15 +248,20 @@ static int extract_tar_block(const TAR_HEAD* tar) {
 }
 
 void print_tar_all_file(TAR_HEAD* tar) {
+	int total_file = 1;
 	while(tar) {
 		if (tar->itype == LONGNAME_HEAD) {
 			printf("%s\n", tar->block);
+			total_file++;
 		}
 		else if (tar->itype == HEAD && tar->type != lf_longname && tar->prev->itype != LONGNAME_HEAD) {
 			printf("%.*s\n", 100, tar->name);
+			total_file++;
 		}
 		tar = tar->next;
 	}
+
+	printf("total_file: %d\n", total_file);
 }
 
 static int extract_dir_tar_block(const TAR_HEAD* tar, const char* name) {
